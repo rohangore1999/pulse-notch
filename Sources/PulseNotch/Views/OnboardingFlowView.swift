@@ -31,9 +31,6 @@ struct OnboardingFlowView: View {
         .background(FocusDotTheme.panel)
         .preferredColorScheme(.dark)
         .onAppear {
-            if ProcessInfo.processInfo.environment["PULSE_NOTCH_CAPTURE_ONBOARDING_STEP"] == "threshold" {
-                step = .threshold
-            }
             PulseNotificationPermission.read { notificationPermission = $0 }
         }
         .onChange(of: step) { newStep in

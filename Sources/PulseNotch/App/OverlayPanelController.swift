@@ -160,19 +160,6 @@ final class OverlayPanelController {
         refreshFullscreenState()
     }
 
-    func capturePreview(to url: URL) throws {
-        guard let view = panel.contentView,
-              let representation = view.bitmapImageRepForCachingDisplay(in: view.bounds) else {
-            throw PreviewCaptureError.couldNotCreateBitmap
-        }
-        panel.displayIfNeeded()
-        view.cacheDisplay(in: view.bounds, to: representation)
-        guard let data = representation.representation(using: .png, properties: [:]) else {
-            throw PreviewCaptureError.couldNotEncodePNG
-        }
-        try data.write(to: url, options: .atomic)
-    }
-
     private func resize(expanded: Bool, animated: Bool) {
         positionPanel(expanded: expanded, animated: animated)
     }
@@ -583,9 +570,4 @@ final class OverlayPanelController {
         guard UserDefaults.standard.object(forKey: key) != nil else { return defaultValue }
         return UserDefaults.standard.bool(forKey: key)
     }
-}
-
-private enum PreviewCaptureError: Error {
-    case couldNotCreateBitmap
-    case couldNotEncodePNG
 }

@@ -6,8 +6,10 @@
     <string>en</string>
     <key>CFBundleExecutable</key>
     <string>PulseNotch</string>
+    <key>CFBundleIconFile</key>
+    <string>PulseNotch.icns</string>
     <key>CFBundleIdentifier</key>
-    <string>com.rohangore.pulsenotch.local</string>
+    <string>com.rohangore.pulsenotch</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>

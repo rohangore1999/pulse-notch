@@ -15,7 +15,7 @@ struct SettingsView: View {
 
     var body: some View {
         Group {
-            if onboardingComplete && ProcessInfo.processInfo.environment["PULSE_NOTCH_CAPTURE_ONBOARDING_STEP"] == nil {
+            if onboardingComplete {
                 settingsContent
             } else {
                 OnboardingFlowView(model: model) {
@@ -30,30 +30,22 @@ struct SettingsView: View {
     }
 
     private var settingsContent: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    header
-                    connectionSection
-                    heartRateThresholdSection
-                    notificationSection
-                    displayAndPrivacySection
-                        .id("display-and-privacy")
-                    footer
-                }
-                .frame(maxWidth: 600, alignment: .leading)
-                .padding(24)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header
+                connectionSection
+                heartRateThresholdSection
+                notificationSection
+                displayAndPrivacySection
+                footer
             }
-            .background(FocusDotTheme.panel)
-            .onAppear {
-                ensureThresholdMode()
-                PulseNotificationPermission.read { notificationPermission = $0 }
-                if ProcessInfo.processInfo.environment["PULSE_NOTCH_CAPTURE_SETTINGS_SECTION"] == "display" {
-                    DispatchQueue.main.async {
-                        proxy.scrollTo("display-and-privacy", anchor: .top)
-                    }
-                }
-            }
+            .frame(maxWidth: 600, alignment: .leading)
+            .padding(24)
+        }
+        .background(FocusDotTheme.panel)
+        .onAppear {
+            ensureThresholdMode()
+            PulseNotificationPermission.read { notificationPermission = $0 }
         }
     }
 

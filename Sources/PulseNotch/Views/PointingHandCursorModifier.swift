@@ -50,4 +50,45 @@ extension View {
     func pointingHandCursor(_ enabled: Bool = true) -> some View {
         modifier(PointingHandCursorModifier(enabled: enabled))
     }
+
+    func crosshairCursor(_ enabled: Bool = true) -> some View {
+        modifier(CrosshairCursorModifier(enabled: enabled))
+    }
+}
+
+private struct CrosshairCursorModifier: ViewModifier {
+    let enabled: Bool
+
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var isHovering = false
+    @State private var hasPushedCursor = false
+
+    func body(content: Content) -> some View {
+        content
+            .onHover { hovering in
+                isHovering = hovering
+                setCursorActive(hovering && cursorIsEnabled)
+            }
+            .onChange(of: cursorIsEnabled) { active in
+                setCursorActive(active && isHovering)
+            }
+            .onDisappear {
+                setCursorActive(false)
+            }
+    }
+
+    private var cursorIsEnabled: Bool {
+        enabled && isEnabled
+    }
+
+    private func setCursorActive(_ active: Bool) {
+        guard active != hasPushedCursor else { return }
+
+        if active {
+            NSCursor.crosshair.push()
+        } else {
+            NSCursor.pop()
+        }
+        hasPushedCursor = active
+    }
 }

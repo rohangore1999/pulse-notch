@@ -16,10 +16,6 @@ struct AdaptiveGlassSurface: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
 
-    private var forcesCaptureFallback: Bool {
-        ProcessInfo.processInfo.environment["PULSE_NOTCH_FORCE_MATERIAL_FALLBACK"] == "1"
-    }
-
     init(
         cornerRadius: CGFloat,
         tint: Color,
@@ -38,9 +34,7 @@ struct AdaptiveGlassSurface: View {
 
     @ViewBuilder
     var body: some View {
-        if forcesCaptureFallback {
-            captureSurface
-        } else if reduceTransparency || contrast == .increased {
+        if reduceTransparency || contrast == .increased {
             accessibleSurface
         } else if #available(macOS 26.0, *) {
             liquidGlassSurface
@@ -86,18 +80,6 @@ struct AdaptiveGlassSurface: View {
                 lineWidth: highlighted ? 2 : 1.5
             )
         }
-    }
-
-    /// Deterministic surrogate used only by the native bitmap QA harness.
-    /// Backdrop materials don't serialize through `cacheDisplay`, so this keeps
-    /// the same tint, edge hierarchy, and geometry without entering production.
-    private var captureSurface: some View {
-        ZStack {
-            shape.fill(Color(red: 0.040, green: 0.047, blue: 0.061))
-            shape.fill(tint.opacity(effectiveTintOpacity))
-        }
-        .overlay(specularRim)
-        .overlay(highlightRim)
     }
 
     private var specularRim: some View {
