@@ -23,6 +23,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Select the macOS 26 SDK toolchain
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_26.3.app/Contents/Developer
+          xcodebuild -version
+
       - name: Validate tag against the app version
         shell: /bin/zsh -eo pipefail {0}
         run: |
