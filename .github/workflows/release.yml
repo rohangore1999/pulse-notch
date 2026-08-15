@@ -24,7 +24,7 @@ jobs:
           persist-credentials: false
 
       - name: Validate tag against the app version
-        shell: zsh
+        shell: /bin/zsh -eo pipefail {0}
         run: |
           app_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)"
           case "${GITHUB_REF_NAME}" in
@@ -57,4 +57,4 @@ jobs:
             --verify-tag \
             --draft \
             --notes-file RELEASE_NOTES.md \
-            --title "Pulse Notch ${GITHUB_REF_NAME} Beta"
+            --title "Pulse Notch ${GITHUB_REF_NAME}"

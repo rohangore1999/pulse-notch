@@ -1,6 +1,6 @@
 # Pulse Notch Support
 
-Pulse Notch is currently an ad-hoc signed, non-notarized public beta for Apple Silicon Macs. It is not signed with an Apple Developer ID, distributed through the Mac App Store, or updated automatically.
+Pulse Notch is currently an ad-hoc signed, non-notarized release for Apple Silicon Macs. It is not signed with an Apple Developer ID, distributed through the Mac App Store, or updated automatically.
 
 For help or bug reports, use [GitHub Issues](https://github.com/rohangore1999/pulse-notch/issues).
 
@@ -18,7 +18,7 @@ Download the current installer from:
 
 [https://github.com/rohangore1999/pulse-notch/releases/latest/download/PulseNotch.dmg](https://github.com/rohangore1999/pulse-notch/releases/latest/download/PulseNotch.dmg)
 
-Open the DMG, drag Pulse Notch into Applications, eject the DMG, and try to open the installed app once. Because this beta is not notarized, macOS will block that attempt. Open **System Settings → Privacy & Security**, scroll to **Security**, click **Open Anyway** for Pulse Notch, and confirm the launch.
+Open the DMG, drag Pulse Notch into Applications, eject the DMG, and try to open the installed app once. Because this release is not notarized, macOS will block that attempt. Open **System Settings → Privacy & Security**, scroll to **Security**, click **Open Anyway** for Pulse Notch, and confirm the launch.
 
 The option appears only after the blocked launch attempt and may be available for a limited time. On a work- or school-managed Mac, organizational policy may prevent **Open Anyway**; ask the administrator rather than attempting to bypass that policy.
 

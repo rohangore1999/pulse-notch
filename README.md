@@ -5,7 +5,7 @@ Pulse Notch is a local macOS heart-rate threshold companion for WHOOP 5.0. It re
 The app has no login, analytics, developer-operated server, or cloud sync.
 
 > [!WARNING]
-> **Non-notarized public beta:** Pulse Notch is ad-hoc signed for packaging; it is not signed with an Apple Developer ID and is not notarized by Apple. macOS will block its first launch until you explicitly approve it in **System Settings → Privacy & Security → Open Anyway**. Install it only if you are comfortable testing non-notarized software. A work- or school-managed Mac may prevent installation entirely.
+> **Non-notarized release:** Pulse Notch is ad-hoc signed for packaging; it is not signed with an Apple Developer ID and is not notarized by Apple. macOS will block its first launch until you explicitly approve it in **System Settings → Privacy & Security → Open Anyway**. Install it only if you are comfortable using non-notarized software. A work- or school-managed Mac may prevent installation entirely.
 
 ## System requirements
 
@@ -83,7 +83,7 @@ Heart-rate zones, thresholds, colors, and coaching cues shown by Pulse Notch are
 
 ## Updates
 
-Pulse Notch has no automatic updater. To update, quit Pulse Notch from its heart menu-bar item, download the latest DMG from the link above, and drag the new app into Applications, choosing **Replace** when Finder asks. Your preferences normally remain because the bundle identifier stays the same. macOS may require **Open Anyway** again for a newly downloaded beta.
+Pulse Notch has no automatic updater. To update, quit Pulse Notch from its heart menu-bar item, download the latest DMG from the link above, and drag the new app into Applications, choosing **Replace** when Finder asks. Your preferences normally remain because the bundle identifier stays the same. macOS may require **Open Anyway** again for a newly downloaded release.
 
 ## Uninstall
 

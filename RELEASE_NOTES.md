@@ -1,16 +1,16 @@
-## Pulse Notch beta
+## Pulse Notch release
 
-Pulse Notch displays live heart rate from a WHOOP 5.0 Heart Rate Broadcast in the drawable areas around a MacBook camera cutout. This beta is Apple Silicon only and requires macOS 13 Ventura or newer.
+Pulse Notch displays live heart rate from a WHOOP 5.0 Heart Rate Broadcast in the drawable areas around a MacBook camera cutout. This release is Apple Silicon only and requires macOS 13 Ventura or newer.
 
 ### Install
 
 1. Download `PulseNotch.dmg` and open it.
 2. Drag **Pulse Notch** into the **Applications** shortcut.
 3. Try to open Pulse Notch from Applications once.
-4. Because this beta is not notarized, macOS will block the first launch. Open **System Settings → Privacy & Security**, scroll to **Security**, choose **Open Anyway**, and confirm.
+4. Because this release is not notarized, macOS will block the first launch. Open **System Settings → Privacy & Security**, scroll to **Security**, choose **Open Anyway**, and confirm.
 5. Allow Bluetooth access, enable Heart Rate Broadcast in the WHOOP app, and explicitly select your WHOOP in Pulse Notch setup.
 
-The app is ad-hoc signed rather than signed with an Apple Developer ID. Apple has not reviewed or notarized this beta. Managed Macs can prevent the Open Anyway override.
+The app is ad-hoc signed rather than signed with an Apple Developer ID. Apple has not reviewed or notarized this release. Managed Macs can prevent the Open Anyway override.
 
 ### Included
 
@@ -24,7 +24,7 @@ The app is ad-hoc signed rather than signed with an Apple Developer ID. Apple ha
 
 Pulse Notch is a wellness cue, not medical monitoring, diagnosis, emergency detection or treatment. It is an independent app and is not affiliated with, endorsed by or sponsored by WHOOP. WHOOP is a trademark of its respective owner.
 
-There is no automatic updater in this beta. Download future versions from the Pulse Notch GitHub Releases page and replace the existing app in Applications.
+There is no automatic updater in this release. Download future versions from the Pulse Notch GitHub Releases page and replace the existing app in Applications.
 
 - [Privacy](https://github.com/rohangore1999/pulse-notch/blob/main/PRIVACY.md)
 - [Support](https://github.com/rohangore1999/pulse-notch/blob/main/SUPPORT.md)
