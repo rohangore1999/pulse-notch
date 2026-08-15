@@ -70,6 +70,8 @@ IS_MOUNTED=true
 
 [[ -d "${MOUNT_DIR}/${APP_NAME}" ]] || fail "mounted DMG does not contain ${APP_NAME}"
 [[ -L "${MOUNT_DIR}/Applications" ]] || fail "mounted DMG does not contain an Applications symlink"
+[[ -s "${MOUNT_DIR}/.DS_Store" ]] || fail "mounted DMG does not contain Finder layout metadata"
+[[ -s "${MOUNT_DIR}/.VolumeIcon.icns" ]] || fail "mounted DMG does not contain its volume icon"
 APPLICATIONS_TARGET="$(/usr/bin/readlink "${MOUNT_DIR}/Applications")"
 [[ "${APPLICATIONS_TARGET}" == "/Applications" ]] || fail "Applications symlink points to ${APPLICATIONS_TARGET}"
 
