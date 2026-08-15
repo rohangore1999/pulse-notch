@@ -2,13 +2,29 @@
 
 Pulse Notch is a local macOS heart-rate threshold companion for WHOOP 5.0. It reads the standard Bluetooth Heart Rate Service directly from WHOOP Heart Rate Broadcast and presents live BPM in the drawable areas around the MacBook camera cutout.
 
-The prototype has no login, analytics, server, or cloud sync.
+The app has no login, analytics, developer-operated server, or cloud sync.
+
+> [!WARNING]
+> **Non-notarized public beta:** Pulse Notch is ad-hoc signed for packaging; it is not signed with an Apple Developer ID and is not notarized by Apple. macOS will block its first launch until you explicitly approve it in **System Settings → Privacy & Security → Open Anyway**. Install it only if you are comfortable testing non-notarized software. A work- or school-managed Mac may prevent installation entirely.
 
 ## System requirements
 
 - Apple Silicon Mac (M1 or newer); Intel Macs are not supported
 - macOS 13 Ventura or newer
 - WHOOP 5.0 with Heart Rate Broadcast enabled
+
+## Download and install
+
+[Download the latest PulseNotch.dmg](https://github.com/rohangore1999/pulse-notch/releases/latest/download/PulseNotch.dmg)
+
+1. Open `PulseNotch.dmg`.
+2. Drag **Pulse Notch** into the **Applications** shortcut in the installer window.
+3. Eject the disk image, then try to open **Pulse Notch** from Applications.
+4. After macOS blocks the first launch, open **System Settings → Privacy & Security**.
+5. Scroll to **Security**, click **Open Anyway** for Pulse Notch, authenticate if asked, then confirm **Open**.
+6. Allow Bluetooth access and follow setup to select your WHOOP explicitly.
+
+The **Open Anyway** option appears only after a blocked launch attempt and may be available for a limited time. Organization-managed security policy can hide or disable it; contact your administrator rather than bypassing that policy.
 
 ## What is implemented
 
@@ -42,7 +58,7 @@ Run the local parser and threshold-state tests:
 ./scripts/test-local.sh
 ```
 
-The generated app is ad-hoc signed and intended for local testing on this Mac.
+The generated app is ad-hoc signed and not notarized. Verify it locally before packaging it into a release DMG.
 
 ## Connect WHOOP 5.0
 
@@ -57,3 +73,23 @@ The heart menu-bar item also provides **Scan for Monitor** for quick reconnectio
 ## Important boundary
 
 Pulse Notch is a user-configured wellness cue. It does not detect stress, diagnose a condition, provide emergency monitoring, or control the WHOOP device.
+
+Heart-rate zones, thresholds, colors, and coaching cues shown by Pulse Notch are configured or calculated by Pulse Notch; they are not official WHOOP classifications. Pulse Notch is an independent project and is not affiliated with, endorsed by, or sponsored by WHOOP. WHOOP is a trademark of its respective owner.
+
+## Privacy and support
+
+- Read the [privacy policy](PRIVACY.md) for the exact local data and retention behavior.
+- Report bugs or request help through [GitHub Issues](https://github.com/rohangore1999/pulse-notch/issues).
+
+## Updates
+
+Pulse Notch has no automatic updater. To update, quit Pulse Notch from its heart menu-bar item, download the latest DMG from the link above, and drag the new app into Applications, choosing **Replace** when Finder asks. Your preferences normally remain because the bundle identifier stays the same. macOS may require **Open Anyway** again for a newly downloaded beta.
+
+## Uninstall
+
+1. Choose **Quit Pulse Notch** from the heart menu-bar item.
+2. Move **Pulse Notch.app** from Applications to the Trash.
+3. To also erase saved settings and the approved Bluetooth device, in Finder choose **Go → Go to Folder…**, enter `~/Library/Containers/com.rohangore.pulsenotch`, and move that Pulse Notch container to the Trash if it exists.
+4. Clear any previous Pulse Notch notifications from macOS Notification Center separately if desired.
+
+Deleting the app alone does not necessarily delete its local preferences.
