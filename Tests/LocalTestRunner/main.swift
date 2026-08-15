@@ -224,6 +224,322 @@ expect(
     "Ignores a stale cancellation callback after switching attempts"
 )
 
+let chartEnd = Date(timeIntervalSince1970: 10_000)
+func chartSample(secondsBeforeEnd: TimeInterval, bpm: Int) -> HeartRateSample {
+    HeartRateSample(
+        timestamp: chartEnd.addingTimeInterval(-secondsBeforeEnd),
+        bpm: bpm,
+        zone: .zone0
+    )
+}
+
+let hourWindowInput = [
+    chartSample(secondsBeforeEnd: 3_601, bpm: 60),
+    chartSample(secondsBeforeEnd: 3_600, bpm: 61),
+    chartSample(secondsBeforeEnd: 1_800, bpm: 72),
+    chartSample(secondsBeforeEnd: 0, bpm: 80),
+    HeartRateSample(
+        timestamp: chartEnd.addingTimeInterval(1),
+        bpm: 90,
+        zone: .zone0
+    )
+]
+let hourWindow = HeartRateChartPolicy.windowedSamples(
+    hourWindowInput,
+    endingAt: chartEnd,
+    duration: HeartRateChartPolicy.expandedWindow
+)
+expect(
+    hourWindow.map(\.bpm) == [61, 72, 80],
+    "The expanded chart uses an exact rolling one-hour window"
+)
+expect(
+    HeartRateChartPolicy.compactWindow == 60
+        && HeartRateChartPolicy.compactRetention == 180,
+    "The compact notch keeps its existing one-minute view and three-minute buffer"
+)
+
+var chartCalendar = Calendar(identifier: .gregorian)
+chartCalendar.timeZone = TimeZone(secondsFromGMT: 0)!
+let minuteBase = Date(timeIntervalSince1970: 12_000)
+let firstMinuteSample = HeartRateSample(
+    id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+    timestamp: minuteBase.addingTimeInterval(5),
+    bpm: 70,
+    zone: .zone0
+)
+let latestMinuteSample = HeartRateSample(
+    id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+    timestamp: minuteBase.addingTimeInterval(45),
+    bpm: 71,
+    zone: .zone1
+)
+let minuteAverage = HeartRateChartPolicy.minuteAverages(
+    [latestMinuteSample, firstMinuteSample],
+    calendar: chartCalendar
+)
+expect(
+    minuteAverage.count == 1
+        && minuteAverage[0].bpm == 71
+        && minuteAverage[0].timestamp == minuteBase
+        && minuteAverage[0].id == firstMinuteSample.id
+        && minuteAverage[0].zone == latestMinuteSample.zone,
+    "Minute history uses a rounded average at the canonical minute with stable identity"
+)
+
+let partialMinuteBefore = HeartRateChartPolicy.minuteAverages(
+    [firstMinuteSample],
+    calendar: chartCalendar
+)
+let partialMinuteAfter = HeartRateChartPolicy.minuteAverages(
+    [firstMinuteSample, latestMinuteSample],
+    calendar: chartCalendar
+)
+expect(
+    partialMinuteBefore[0].id == partialMinuteAfter[0].id
+        && partialMinuteBefore[0].timestamp == partialMinuteAfter[0].timestamp
+        && partialMinuteBefore[0].bpm == 70
+        && partialMinuteAfter[0].bpm == 71,
+    "The current minute updates its average without moving or replacing its chart point"
+)
+
+let laterMinuteSample = HeartRateSample(
+    timestamp: minuteBase.addingTimeInterval(60),
+    bpm: 90,
+    zone: .zone2
+)
+let orderedMinuteAverages = HeartRateChartPolicy.minuteAverages(
+    [laterMinuteSample, latestMinuteSample, firstMinuteSample],
+    calendar: chartCalendar
+)
+expect(
+    orderedMinuteAverages.map(\.timestamp) == [minuteBase, minuteBase.addingTimeInterval(60)]
+        && orderedMinuteAverages.map(\.bpm) == [71, 90],
+    "Minute averages are chronological even when raw readings arrive unordered"
+)
+
+let sampleAfterMissingMinute = HeartRateSample(
+    timestamp: minuteBase.addingTimeInterval(180),
+    bpm: 95,
+    zone: .zone2
+)
+let minuteGapAverages = HeartRateChartPolicy.minuteAverages(
+    [sampleAfterMissingMinute, laterMinuteSample, firstMinuteSample],
+    calendar: chartCalendar
+)
+expect(
+    HeartRateChartPolicy.minuteContinuityGap == 90
+        && HeartRateChartPolicy.continuousRuns(
+            minuteGapAverages,
+            maximumGap: HeartRateChartPolicy.minuteContinuityGap
+        ).map(\.count) == [2, 1],
+    "Minute-resolution continuity joins adjacent buckets and breaks across missing minutes"
+)
+
+let noon = chartCalendar.date(
+    from: DateComponents(
+        timeZone: chartCalendar.timeZone,
+        year: 2026,
+        month: 8,
+        day: 15,
+        hour: 12
+    )
+)!
+let beforeRawOutage = HeartRateSample(
+    timestamp: noon.addingTimeInterval(1),
+    bpm: 72,
+    zone: .zone0
+)
+let afterRawOutage = HeartRateSample(
+    timestamp: noon.addingTimeInterval(119),
+    bpm: 84,
+    zone: .zone1
+)
+let rawGapMinuteRuns = HeartRateChartPolicy.minuteAverageRuns(
+    fromSorted: [beforeRawOutage, afterRawOutage],
+    calendar: chartCalendar
+)
+expect(
+    rawGapMinuteRuns.map(\.count) == [1, 1]
+        && rawGapMinuteRuns.map { $0[0].timestamp }
+            == [noon, noon.addingTimeInterval(60)],
+    "Minute history preserves a raw outage even when its buckets are adjacent"
+)
+
+let windowStart = noon.addingTimeInterval(30)
+let clampedOldestBucket = HeartRateChartPolicy.minuteAverages(
+    fromSorted: [
+        HeartRateSample(
+            timestamp: windowStart.addingTimeInterval(1),
+            bpm: 68,
+            zone: .zone0
+        ),
+        HeartRateSample(
+            timestamp: windowStart.addingTimeInterval(20),
+            bpm: 72,
+            zone: .zone0
+        )
+    ],
+    calendar: chartCalendar,
+    lowerBound: windowStart
+)
+expect(
+    clampedOldestBucket.count == 1
+        && clampedOldestBucket[0].timestamp == windowStart
+        && clampedOldestBucket[0].bpm == 70,
+    "The oldest partial minute starts at the rolling window boundary"
+)
+
+let inputFirstAtSameTimestamp = HeartRateSample(
+    id: UUID(uuidString: "00000000-0000-0000-0000-0000000000ff")!,
+    timestamp: noon.addingTimeInterval(10),
+    bpm: 70,
+    zone: .zone0
+)
+let inputSecondAtSameTimestamp = HeartRateSample(
+    id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+    timestamp: noon.addingTimeInterval(10),
+    bpm: 80,
+    zone: .zone2
+)
+let onePassMinuteAverage = HeartRateChartPolicy.minuteAverages(
+    fromSorted: [inputFirstAtSameTimestamp, inputSecondAtSameTimestamp],
+    calendar: chartCalendar
+)
+let sortingMinuteAverage = HeartRateChartPolicy.minuteAverages(
+    [inputFirstAtSameTimestamp, inputSecondAtSameTimestamp],
+    calendar: chartCalendar
+)
+expect(
+    onePassMinuteAverage[0].id == inputFirstAtSameTimestamp.id
+        && onePassMinuteAverage[0].zone == inputSecondAtSameTimestamp.zone
+        && sortingMinuteAverage[0].id == inputSecondAtSameTimestamp.id,
+    "The already-sorted minute path preserves caller order without sorting again"
+)
+
+var retainedHistory: [HeartRateSample] = []
+for index in 0..<8 {
+    retainedHistory = HeartRateChartPolicy.retainedSamples(
+        retainedHistory,
+        appending: HeartRateSample(
+            timestamp: chartEnd.addingTimeInterval(Double(index)),
+            bpm: 70 + index,
+            zone: .zone0
+        ),
+        duration: 60,
+        maximumCount: 5
+    )
+}
+expect(
+    retainedHistory.count == 5 && retainedHistory.map(\.bpm) == [73, 74, 75, 76, 77],
+    "Chart history applies a deterministic sample-count cap"
+)
+
+let gapSamples = [
+    chartSample(secondsBeforeEnd: 30, bpm: 70),
+    chartSample(secondsBeforeEnd: 29, bpm: 71),
+    chartSample(secondsBeforeEnd: 20, bpm: 72),
+    chartSample(secondsBeforeEnd: 19, bpm: 73)
+].sorted { $0.timestamp < $1.timestamp }
+expect(
+    HeartRateChartPolicy.continuousRuns(gapSamples).map(\.count) == [2, 2],
+    "Missing BLE readings split the chart into honest visual gaps"
+)
+
+let spikeSamples = (0..<100).map { index in
+    HeartRateSample(
+        timestamp: chartEnd.addingTimeInterval(Double(index)),
+        bpm: index == 51 ? 160 : 70 + index % 4,
+        zone: .zone0
+    )
+}
+let reducedSpikeSamples = HeartRateChartPolicy.downsampledForPlot(
+    spikeSamples,
+    maximumPoints: 20
+)
+expect(
+    reducedSpikeSamples.count <= 20
+        && reducedSpikeSamples.first?.id == spikeSamples.first?.id
+        && reducedSpikeSamples.last?.id == spikeSamples.last?.id
+        && reducedSpikeSamples.contains(where: { $0.bpm == 160 }),
+    "Plot downsampling preserves endpoints and brief heart-rate spikes"
+)
+
+let burstHistory = (0..<36_000).map { index in
+    HeartRateSample(
+        timestamp: chartEnd.addingTimeInterval(Double(index) / 10),
+        bpm: 65 + index % 45,
+        zone: .zone0
+    )
+}
+expect(
+    HeartRateChartPolicy.downsampledForPlot(
+        burstHistory,
+        maximumPoints: 920
+    ).count <= 920,
+    "A ten-hertz hour is reduced to at most two points per chart point"
+)
+
+let nearestInput = [
+    chartSample(secondsBeforeEnd: 20, bpm: 70),
+    chartSample(secondsBeforeEnd: 10, bpm: 80)
+].sorted { $0.timestamp < $1.timestamp }
+expect(
+    HeartRateChartPolicy.nearestSample(
+        to: chartEnd.addingTimeInterval(-11),
+        in: nearestInput,
+        maximumDistance: 2
+    )?.bpm == 80,
+    "Hover snaps to the nearest real heart-rate sample"
+)
+expect(
+    HeartRateChartPolicy.hoverSample(
+        to: chartEnd.addingTimeInterval(-15),
+        in: nearestInput,
+        maximumDistance: 8
+    ) == nil,
+    "Hover does not fabricate a reading inside a data gap"
+)
+expect(
+    HeartRateChartPolicy.hoverSample(
+        to: chartEnd.addingTimeInterval(-10.5),
+        in: nearestInput,
+        maximumDistance: 8
+    )?.bpm == 80,
+    "Hover still reaches a real sample at the edge of a data gap"
+)
+
+let midpointTimestamp = HeartRateChartPolicy.timestamp(
+    atX: 50,
+    plotStartX: 0,
+    plotWidth: 100,
+    endingAt: chartEnd,
+    duration: HeartRateChartPolicy.expandedWindow
+)
+expect(
+    midpointTimestamp == chartEnd.addingTimeInterval(-1_800),
+    "Hover maps the chart midpoint to thirty minutes ago"
+)
+expect(
+    HeartRateChartPolicy.timestamp(
+        atX: 0,
+        plotStartX: 0,
+        plotWidth: 0,
+        endingAt: chartEnd,
+        duration: HeartRateChartPolicy.expandedWindow
+    ) == nil,
+    "Hover safely ignores a zero-width plot"
+)
+
+let chartBounds = HeartRateChartPolicy.bounds(
+    for: [chartSample(secondsBeforeEnd: 0, bpm: 47), chartSample(secondsBeforeEnd: 1, bpm: 141)],
+    thresholdBPM: 90
+)
+expect(
+    chartBounds.minimumBPM <= 39 && chartBounds.maximumBPM >= 149,
+    "The hour chart bounds include readings and the configured threshold"
+)
+
 let zones = ZoneConfiguration.fromHRR(restingHeartRate: 60, maximumHeartRate: 190)
 expect(zones.lowerBounds == [112, 138, 151, 164, 177], "Calculates WHOOP-style HRR bounds")
 expect(zones.zone(for: 111) == .zone0, "Classifies below Z1")

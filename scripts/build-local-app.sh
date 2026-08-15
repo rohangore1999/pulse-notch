@@ -54,6 +54,7 @@ fi
 /bin/mkdir -p "${APP_DIR}/Contents/MacOS" "${APP_DIR}/Contents/Resources"
 /usr/bin/install -m 755 "${LOCAL_BUILD_DIR}/PulseNotch" "${APP_DIR}/Contents/MacOS/PulseNotch"
 /usr/bin/install -m 644 "${PROJECT_DIR}/Support/Info.plist" "${APP_DIR}/Contents/Info.plist"
+/usr/bin/install -m 644 "${PROJECT_DIR}/Support/PulseNotch.icns" "${APP_DIR}/Contents/Resources/PulseNotch.icns"
 
 /usr/bin/plutil -lint "${APP_DIR}/Contents/Info.plist"
 /usr/bin/codesign \

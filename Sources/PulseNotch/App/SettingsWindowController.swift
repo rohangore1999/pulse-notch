@@ -29,23 +29,4 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         showWindow(nil)
         window.makeKeyAndOrderFront(nil)
     }
-
-    func capturePreview(to url: URL) throws {
-        guard let window,
-              let view = window.contentView,
-              let representation = view.bitmapImageRepForCachingDisplay(in: view.bounds) else {
-            throw SettingsPreviewCaptureError.couldNotCreateBitmap
-        }
-        window.displayIfNeeded()
-        view.cacheDisplay(in: view.bounds, to: representation)
-        guard let data = representation.representation(using: .png, properties: [:]) else {
-            throw SettingsPreviewCaptureError.couldNotEncodePNG
-        }
-        try data.write(to: url, options: .atomic)
-    }
-}
-
-private enum SettingsPreviewCaptureError: Error {
-    case couldNotCreateBitmap
-    case couldNotEncodePNG
 }

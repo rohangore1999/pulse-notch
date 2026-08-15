@@ -62,6 +62,7 @@ final class HeartRateAppModel: NSObject, ObservableObject {
 
     @Published private(set) var bpm: Int?
     @Published private(set) var samples: [HeartRateSample] = []
+    @Published private(set) var expandedChartSamples: [HeartRateSample] = []
     @Published private(set) var devices: [DiscoveredHeartRateDevice] = []
     @Published private(set) var approvedDeviceID: UUID?
     @Published private(set) var approvedDeviceName: String?
@@ -79,7 +80,6 @@ final class HeartRateAppModel: NSObject, ObservableObject {
     @Published private(set) var focusState: FocusDotSemanticState = .disconnected
     @Published private(set) var sensorContactDetected: Bool?
     @Published var isExpanded = false
-    @Published private(set) var isSimulating = false
 
     let settings: SettingsStore
 
@@ -99,9 +99,8 @@ final class HeartRateAppModel: NSObject, ObservableObject {
     private var reconnectAttempt = 0
     private var pendingTermination: PendingBLEConnectionTermination?
     private var freshnessTimer: Timer?
-    private var simulationTimer: Timer?
-    private var simulationStep = 0
     private var lastSampleDate: Date?
+    private var expandedHistoryDeviceID: UUID?
     private var staleReconnectRequested = false
     private var thresholdEngine = ThresholdEngine()
     private let notifications = NotificationService()
@@ -191,6 +190,7 @@ final class HeartRateAppModel: NSObject, ObservableObject {
         pendingTermination = nil
         cancelConnectionTasks()
         stopScanning()
+        clearExpandedChartHistory()
         clearActiveConnection(cancelOwnedConnection: true)
         connectionStatus = .idle
     }
@@ -206,42 +206,13 @@ final class HeartRateAppModel: NSObject, ObservableObject {
         pendingTermination = nil
         cancelConnectionTasks()
         stopScanning()
+        clearExpandedChartHistory()
         clearActiveConnection(cancelOwnedConnection: true)
         beginPickerScan()
     }
 
-    func toggleSimulation() {
-        isSimulating ? stopSimulation() : startSimulation()
-    }
-
-    func startSimulation(prefilling seconds: Int = 0) {
-        simulationTimer?.invalidate()
-        isSimulating = true
-        simulationStep = 0
-        if seconds > 0 {
-            let now = Date()
-            for offset in stride(from: seconds, through: 1, by: -1) {
-                emitSimulationSample(at: now.addingTimeInterval(-TimeInterval(offset)))
-            }
-        }
-        simulationTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            self?.emitSimulationSample()
-        }
-        emitSimulationSample()
-    }
-
-    func stopSimulation() {
-        simulationTimer?.invalidate()
-        simulationTimer = nil
-        isSimulating = false
-        samples.removeAll()
-        bpm = nil
-        lastSampleDate = nil
-        markStale()
-    }
-
     func handleWake() {
-        guard desiredRunning, !isSimulating else { return }
+        guard desiredRunning else { return }
         if selectedPeripheral?.state != .connected || connectedDeviceID == nil {
             reconnectApprovedPeripheralOrStartPicker()
         }
@@ -249,7 +220,6 @@ final class HeartRateAppModel: NSObject, ObservableObject {
 
     func shutdown() {
         freshnessTimer?.invalidate()
-        simulationTimer?.invalidate()
         disconnect()
     }
 
@@ -269,24 +239,15 @@ final class HeartRateAppModel: NSObject, ObservableObject {
         updateFocusState(at: Date())
     }
 
-    private func emitSimulationSample(at date: Date = Date()) {
-        guard isSimulating else { return }
-        let zones = settings.zones
-        let low = max(45, zones.zone1Lower - 25)
-        let high = min(215, zones.zone4Lower + 8)
-        let midpoint = Double(low + high) / 2
-        let amplitude = Double(high - low) / 2
-        let angle = Double(simulationStep) / 42.0 * .pi * 2
-        let wave = sin(angle) * amplitude
-        let smallerWave = sin(angle * 3.2) * 3
-        ingest(bpm: Int((midpoint + wave + smallerWave).rounded()), at: date, contact: true)
-        simulationStep += 1
-    }
-
-    private func ingest(bpm: Int, at date: Date, contact: Bool?) {
+    private func ingest(bpm: Int, at date: Date, contact: Bool?, deviceID: UUID) {
         guard (20...260).contains(bpm), settings.zones.isValid else { return }
         let zone = settings.zones.zone(for: bpm)
         let sample = HeartRateSample(timestamp: date, bpm: bpm, zone: zone)
+
+        if expandedHistoryDeviceID != deviceID {
+            expandedChartSamples.removeAll(keepingCapacity: true)
+            expandedHistoryDeviceID = deviceID
+        }
 
         self.bpm = bpm
         sensorContactDetected = contact
@@ -296,8 +257,14 @@ final class HeartRateAppModel: NSObject, ObservableObject {
         isStale = contact == false
         staleReconnectRequested = false
         samples.append(sample)
-        let cutoff = date.addingTimeInterval(-180)
+        let cutoff = date.addingTimeInterval(-HeartRateChartPolicy.compactRetention)
         samples.removeAll { $0.timestamp < cutoff }
+        expandedChartSamples = HeartRateChartPolicy.retainedSamples(
+            expandedChartSamples,
+            appending: sample,
+            duration: HeartRateChartPolicy.expandedWindow,
+            maximumCount: HeartRateChartPolicy.expandedMaximumSampleCount
+        )
 
         let shouldNotify = thresholdEngine.ingest(
             bpm: bpm,
@@ -319,7 +286,7 @@ final class HeartRateAppModel: NSObject, ObservableObject {
 
     private func refreshFreshness() {
         let now = Date()
-        guard !isSimulating, let lastSampleDate else {
+        guard let lastSampleDate else {
             updateFocusState(at: now)
             return
         }
@@ -355,13 +322,14 @@ final class HeartRateAppModel: NSObject, ObservableObject {
         }
     }
 
+    private func clearExpandedChartHistory() {
+        expandedChartSamples.removeAll(keepingCapacity: true)
+        expandedHistoryDeviceID = nil
+    }
+
     private func updateFocusState(at date: Date) {
         let nextState: FocusDotSemanticState
-        if isSimulating {
-            nextState = isStale
-                ? .stale
-                : thresholdEngine.semanticState(at: date, configuration: settings.alerts)
-        } else if !connectionStatus.isLive {
+        if !connectionStatus.isLive {
             nextState = .disconnected
         } else if isStale {
             nextState = .stale
@@ -882,8 +850,7 @@ extension HeartRateAppModel: CBPeripheralDelegate {
         didUpdateValueFor characteristic: CBCharacteristic,
         error: Error?
     ) {
-        guard !isSimulating,
-              isCurrent(peripheral),
+        guard isCurrent(peripheral),
               let measurementCharacteristic,
               measurementCharacteristic === characteristic,
               error == nil,
@@ -900,7 +867,8 @@ extension HeartRateAppModel: CBPeripheralDelegate {
         ingest(
             bpm: measurement.bpm,
             at: Date(),
-            contact: measurement.sensorContactDetected
+            contact: measurement.sensorContactDetected,
+            deviceID: peripheral.identifier
         )
     }
 

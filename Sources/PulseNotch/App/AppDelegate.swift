@@ -17,11 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         configureStatusItem()
         overlayController.show()
 
-        if let qaState = ProcessInfo.processInfo.environment["PULSE_NOTCH_QA_STATE"] {
-            configureQAPreview(state: qaState)
-        } else if let capturePath = ProcessInfo.processInfo.environment["PULSE_NOTCH_CAPTURE_PATH"] {
-            runPreviewCapture(path: capturePath)
-        } else if !UserDefaults.standard.bool(forKey: "pulseNotch.onboardingComplete.v1") {
+        if !UserDefaults.standard.bool(forKey: "pulseNotch.onboardingComplete.v1") {
             settingsController.show()
         }
 
@@ -55,7 +51,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Scan for Monitor", action: #selector(startScanning), keyEquivalent: "s")
-        menu.addItem(withTitle: "Toggle Demo Signal", action: #selector(toggleSimulation), keyEquivalent: "d")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Pulse Notch", action: #selector(quit), keyEquivalent: "q")
         menu.items.forEach { $0.target = self }
@@ -84,72 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlayController.show()
     }
 
-    @objc private func toggleSimulation() {
-        model.toggleSimulation()
-        overlayController.show()
-    }
-
     @objc private func quit() {
         NSApp.terminate(nil)
-    }
-
-    private func runPreviewCapture(path: String) {
-        let state = ProcessInfo.processInfo.environment["PULSE_NOTCH_CAPTURE_STATE"] ?? "expanded"
-        let target = ProcessInfo.processInfo.environment["PULSE_NOTCH_CAPTURE_TARGET"] ?? "overlay"
-        let requestedName = URL(fileURLWithPath: path).lastPathComponent
-        let captureURL = FileManager.default.temporaryDirectory.appendingPathComponent(requestedName)
-        let isThresholdOnboardingCapture = ProcessInfo.processInfo.environment["PULSE_NOTCH_CAPTURE_ONBOARDING_STEP"] == "threshold"
-        let isOpeningCapture = state == "opening"
-        let isElevatedCapture = state == "elevated" || state == "elevated-collapsed" || isOpeningCapture
-        let originalAlerts = model.settings.alerts
-        var captureAlerts = originalAlerts
-        captureAlerts.isEnabled = true
-        captureAlerts.mode = .bpm
-        captureAlerts.bpmThreshold = isThresholdOnboardingCapture ? 62 : (isElevatedCapture ? 100 : 210)
-        captureAlerts.dwellSeconds = isThresholdOnboardingCapture ? 15 : (isElevatedCapture ? 5 : 20)
-        model.settings.alerts = captureAlerts
-        model.startSimulation(prefilling: 180)
-        model.isExpanded = ["expanded", "elevated", "reset", "complete"].contains(state)
-        if target == "settings" {
-            settingsController.show()
-        }
-
-        if isOpeningCapture {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                self?.model.isExpanded = true
-            }
-        }
-
-        let captureDelay = isOpeningCapture ? 1.22 : 1.5
-        DispatchQueue.main.asyncAfter(deadline: .now() + captureDelay) { [weak self] in
-            guard let self else { return }
-            do {
-                if target == "settings" {
-                    try self.settingsController.capturePreview(to: captureURL)
-                } else {
-                    try self.overlayController.capturePreview(to: captureURL)
-                }
-                fputs("Pulse Notch preview saved: \(captureURL.path)\n", stderr)
-            } catch {
-                fputs("Pulse Notch preview capture failed: \(error)\n", stderr)
-            }
-            self.model.settings.alerts = originalAlerts
-            NSApp.terminate(nil)
-        }
-    }
-
-    /// Keeps a deterministic simulated state onscreen for real desktop captures.
-    /// Unlike the bitmap capture path, this preserves backdrop sampling for
-    /// native Liquid Glass and never changes the user's alert configuration.
-    private func configureQAPreview(state: String) {
-        model.startSimulation(prefilling: 180)
-        model.isExpanded = ["expanded", "elevated"].contains(state)
-
-        if state == "opening" {
-            model.isExpanded = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                self?.model.isExpanded = true
-            }
-        }
     }
 }

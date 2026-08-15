@@ -97,7 +97,6 @@ struct NotchPillView: View {
         .animation(.easeInOut(duration: reduceMotion ? 0 : 0.24), value: accent)
         .onReceive(secondTick) { _ in tickReset() }
         .onAppear {
-            configurePreviewStateIfNeeded()
             synchronizeExpansion(with: model.isExpanded)
         }
         .onChange(of: model.isExpanded) { expanded in
@@ -302,29 +301,14 @@ struct NotchPillView: View {
                     .accessibilityLabel("Alert threshold \(thresholdBPM) beats per minute")
             }
 
-            VStack(spacing: 2) {
-                SparklineView(
-                    samples: model.samples,
-                    minimumBPM: chartMinimum,
-                    maximumBPM: chartMaximum,
-                    isStale: model.isStale,
-                    thresholdBPM: thresholdBPM,
-                    accent: accent,
-                    style: .expanded,
-                    window: 180
-                )
-                .frame(height: isElevated ? 56 : 78)
-
-                HStack {
-                    Text("3:00")
-                    Spacer()
-                    Text("1:30")
-                    Spacer()
-                    Text("Now")
-                }
-                .font(.system(size: 10, weight: .regular))
-                .foregroundStyle(FocusDotTheme.textSecondary)
-            }
+            ExpandedHeartRateChart(
+                samples: model.expandedChartSamples,
+                thresholdBPM: thresholdBPM,
+                accent: accent,
+                isStale: model.isStale,
+                plotHeight: isElevated ? 56 : 78
+            )
+            .frame(height: (isElevated ? 56 : 78) + 14)
 
             monitoringActionsSlot
         }
@@ -442,7 +426,7 @@ struct NotchPillView: View {
         HStack(spacing: 7) {
             Text("WHOOP 5.0")
             Text("·")
-            Text(model.isSimulating ? "Demo" : "Live BLE")
+            Text("Live BLE")
         }
         .font(.system(size: 10, weight: .medium))
         .foregroundStyle(FocusDotTheme.textTertiary)
@@ -717,18 +701,6 @@ struct NotchPillView: View {
         } else {
             resetSecondsRemaining = 0
             resetPresentation = isElevated ? .completeElevated : .completeInRange
-        }
-    }
-
-    private func configurePreviewStateIfNeeded() {
-        switch ProcessInfo.processInfo.environment["PULSE_NOTCH_CAPTURE_STATE"] {
-        case "reset":
-            resetSecondsRemaining = 42
-            resetPresentation = .active
-        case "complete":
-            resetPresentation = .completeInRange
-        default:
-            break
         }
     }
 
