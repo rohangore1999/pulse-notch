@@ -8,6 +8,20 @@ Pulse Notch is a local macOS heart-rate threshold companion for WHOOP 5.0. It re
 - macOS 13 Ventura or newer
 - WHOOP 5.0 with Heart Rate Broadcast enabled
 
+## How the BLE connection works
+
+```text
+WHOOP sensor → Bluetooth Heart Rate Broadcast → Pulse Notch → live BPM and local threshold cues
+```
+
+1. When **Heart Rate Broadcast** is enabled, WHOOP advertises the standard Bluetooth Low Energy Heart Rate Service (`180D`).
+2. Pulse Notch uses Apple's CoreBluetooth framework to scan locally for nearby devices advertising that service and shows the matching devices for you to choose from. It does not automatically approve an unknown monitor.
+3. After you select your WHOOP, Pulse Notch connects directly from the Mac and subscribes to the standard Heart Rate Measurement characteristic (`2A37`).
+4. WHOOP sends heart-rate measurement notifications over that BLE connection. Pulse Notch decodes the BPM and available sensor-contact state, updates the notch and one-hour chart, and evaluates your threshold locally.
+5. Only a device that has delivered a valid heart-rate measurement is remembered for reconnection. Pulse Notch listens to the broadcast; it does not start workouts, change WHOOP settings, or write data back to the device.
+
+This live path is device-to-Mac BLE and does not use the WHOOP cloud API.
+
 ## Download and install
 
 [Download the latest PulseNotch.dmg](https://github.com/rohangore1999/pulse-notch/releases/latest/download/PulseNotch.dmg)
