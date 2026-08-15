@@ -2,11 +2,6 @@
 
 Pulse Notch is a local macOS heart-rate threshold companion for WHOOP 5.0. It reads the standard Bluetooth Heart Rate Service directly from WHOOP Heart Rate Broadcast and presents live BPM in the drawable areas around the MacBook camera cutout.
 
-The app has no login, analytics, developer-operated server, or cloud sync.
-
-> [!WARNING]
-> **Non-notarized release:** Pulse Notch is ad-hoc signed for packaging; it is not signed with an Apple Developer ID and is not notarized by Apple. macOS will block its first launch until you explicitly approve it in **System Settings → Privacy & Security → Open Anyway**. Install it only if you are comfortable using non-notarized software. A work- or school-managed Mac may prevent installation entirely.
-
 ## System requirements
 
 - Apple Silicon Mac (M1 or newer); Intel Macs are not supported
