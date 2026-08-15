@@ -1,0 +1,36 @@
+# macOS metadata
+.DS_Store
+
+# Swift Package Manager
+/.build/
+/.swiftpm/
+
+# Xcode local state
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.dSYM/
+
+# Generated app and release artifacts
+/dist/
+*.dmg
+*.zip
+*.xcarchive
+
+# Local visual QA evidence
+/qa/
+/design-qa.md
+
+# Logs and local configuration
+*.log
+.env
+.env.*
+!.env.example
+
+# Signing credentials
+*.p8
+*.p12
+*.pem
+*.key
+*.mobileprovision
+*.provisionprofile
