@@ -2,6 +2,10 @@
 
 Pulse Notch is a local macOS heart-rate threshold companion for WHOOP 5.0. It reads the standard Bluetooth Heart Rate Service directly from WHOOP Heart Rate Broadcast and presents live BPM in the drawable areas around the MacBook camera cutout.
 
+<p align="center">
+  <img src="docs/assets/pulse-notch-demo.gif" alt="Pulse Notch showing live WHOOP heart rate around the MacBook camera cutout" width="960">
+</p>
+
 ## System requirements
 
 - Apple Silicon Mac (M1 or newer); Intel Macs are not supported
@@ -22,18 +26,27 @@ WHOOP sensor → Bluetooth Heart Rate Broadcast → Pulse Notch → live BPM and
 
 This live path is device-to-Mac BLE and does not use the WHOOP cloud API.
 
-## Download and install
+## Download and install manually
 
-[Download the latest PulseNotch.dmg](https://github.com/rohangore1999/pulse-notch/releases/latest/download/PulseNotch.dmg)
+[![Download for macOS](https://img.shields.io/badge/Download_for-macOS-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/rohangore1999/pulse-notch/releases/latest/download/PulseNotch.dmg)
 
-1. Open `PulseNotch.dmg`.
-2. Drag **Pulse Notch** into the **Applications** shortcut in the installer window.
-3. Eject the disk image, then try to open **Pulse Notch** from Applications.
-4. After macOS blocks the first launch, open **System Settings → Privacy & Security**.
-5. Scroll to **Security**, click **Open Anyway** for Pulse Notch, authenticate if asked, then confirm **Open**.
-6. Allow Bluetooth access and follow setup to select your WHOOP explicitly.
+**Apple Silicon only:** macOS 13 or newer on an M1 Mac or newer.
 
-The **Open Anyway** option appears only after a blocked launch attempt and may be available for a limited time. Organization-managed security policy can hide or disable it; contact your administrator rather than bypassing that policy.
+Once downloaded, open `PulseNotch.dmg` and drag **Pulse Notch** into the **Applications** shortcut in the installer window.
+
+> [!IMPORTANT]
+> Pulse Notch is currently ad-hoc signed for packaging. It is not signed with an Apple Developer ID and is not notarized by Apple, so macOS will block its first launch and warn that Apple could not verify the app. This is expected for the current release.
+>
+> You need to approve the app manually before it will open. You normally need to do this only once for each downloaded release. Follow the steps below.
+
+### Allow the first launch
+
+1. Eject the disk image, then try to open **Pulse Notch** from Applications once.
+2. After macOS blocks it, open **System Settings → Privacy & Security**.
+3. Scroll to **Security**, click **Open Anyway** for Pulse Notch, and authenticate if asked.
+4. Confirm **Open**, then allow Bluetooth access and follow setup to select your WHOOP explicitly.
+
+The **Open Anyway** option appears only after the blocked launch attempt and may be available for a limited time. A work- or school-managed Mac can hide or disable it; contact your administrator rather than bypassing that policy.
 
 ## What is implemented
 
